@@ -1,3 +1,4 @@
+using ImageDownloder.Infrastructure.Services;
 using Serilog;
 using Serilog.Events;
 
@@ -18,6 +19,10 @@ try
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
+    builder.Services.AddHttpClient();
+    builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+    builder.Services.AddTransient<IImageDownloaderService, ImageDownloaderService>();
 
     var app = builder.Build();
 
