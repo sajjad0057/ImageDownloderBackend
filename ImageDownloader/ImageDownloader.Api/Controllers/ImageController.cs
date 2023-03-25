@@ -6,6 +6,7 @@ using ImageDownloder.Infrastructure.Exceptions;
 using ImageDownloder.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
 
+
 namespace ImageDownloader.Api.Controllers
 {
     [Route("api/[controller]")]
@@ -24,6 +25,23 @@ namespace ImageDownloader.Api.Controllers
             _mapper = mapper;
         }
 
+
+        /// <summary>
+        /// Download image By List of image URL
+        /// </summary>
+        /// <returns>A Dictionary<string,string> : here key : image URL, value : downloaded image name</returns>
+        /// /// <remarks>
+        /// Sample request:
+        ///
+        ///     POST /api/Image/download
+        ///     {
+        ///        "imageUrls" : [],
+        ///        "maxDownloadAtOnce" : int
+        ///     }
+        ///
+        /// </remarks>
+        /// <response code="200">Returns Success result.</response>
+        /// <response code="400">If request  failed.</response>
 
         [HttpPost]
         [Route("download")]
@@ -56,6 +74,18 @@ namespace ImageDownloader.Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Get base64String of request image
+        /// </summary>
+        /// <returns>Base64String of a image</returns>
+        /// /// <remarks>
+        /// Sample request:
+        ///
+        ///     GET /api/Image/get-image-by-name/image_name.Png
+        ///
+        /// </remarks>
+        /// <response code="200">Returns Success result.</response>
+        /// <response code="400">If request  failed.</response>
 
         [HttpGet]
         [Route("get-image-by-name/{image_name}")]
