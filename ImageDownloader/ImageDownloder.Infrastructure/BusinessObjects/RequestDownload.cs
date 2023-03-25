@@ -6,7 +6,7 @@
         public int MaxDownloadAtOnce { get; set; }
         public Queue<List<string>> BatchQueue { get; set;} = new Queue<List<string>>();
 
-        public Queue<List<string>> GetImageQueue()
+        public Queue<List<string>> GetImagesUrlQueue()
         {
 
             if(ImageUrls is not null) 

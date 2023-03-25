@@ -15,7 +15,7 @@ namespace ImageDownloder.Infrastructure.Services
 
         public async Task<IDictionary<string, string>> DownloadImageAsync(RequestDownload requestDownload)
         {
-            var queue = requestDownload.GetImageQueue();
+            var queue = requestDownload.GetImagesUrlQueue();
 
             IDictionary<string, string> dict = new Dictionary<string, string>();
             dict.Add("url", "imageName");
@@ -47,7 +47,7 @@ namespace ImageDownloder.Infrastructure.Services
 
                         Console.WriteLine($"image name> : {imgName}");
 
-                        File.WriteAllBytes($"{folderPath}\\{imgName}", bytes);
+                        await File.WriteAllBytesAsync($"{folderPath}\\{imgName}", bytes);
                     }
                     catch (Exception e)
                     {
