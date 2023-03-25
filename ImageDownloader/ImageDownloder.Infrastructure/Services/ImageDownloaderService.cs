@@ -1,13 +1,14 @@
 ﻿using ImageDownloder.Infrastructure.BusinessObjects;
-using System.IO;
 using System.Net;
+using System.Drawing;
+
 
 namespace ImageDownloder.Infrastructure.Services
 {
     public class ImageDownloaderService : IImageDownloaderService
     {
         private readonly HttpClient _httpClient;
-        private IDictionary<string, string> _dict { get; set; } = new Dictionary<string, string>();
+        private IDictionary<string, string> _Dict { get; set; } = new Dictionary<string, string>();
 
         public ImageDownloaderService(IHttpClientFactory httpClientFactory)
         {
@@ -18,15 +19,13 @@ namespace ImageDownloder.Infrastructure.Services
         public async Task<IDictionary<string, string>> DownloadImageAsync(RequestDownload requestDownload)
         {
             var queue = requestDownload.GetImagesUrlQueue();
-
-            IDictionary<string, string> dict = new Dictionary<string, string>();
-
-            var tasks = new List<Task>();
-
+          
             using var throttler = new SemaphoreSlim(requestDownload.MaxDownloadAtOnce);
 
             while(queue.Count > 0)
             {
+                var tasks = new List<Task>();
+
                 foreach (var url in queue.Dequeue())
                 {
                     await throttler.WaitAsync();
@@ -35,39 +34,26 @@ namespace ImageDownloder.Infrastructure.Services
                     {
                         try
                         {
-                            var response = await _httpClient.GetAsync(url);
-
-                            response.EnsureSuccessStatusCode();
-
-                            if(response.StatusCode == HttpStatusCode.OK)
+                            if (!_Dict.ContainsKey(url))
                             {
-                                var bytes = await response.Content.ReadAsByteArrayAsync();
+                                var response = await _httpClient.GetAsync(url);
 
-                                var rootPath = new DirectoryInfo(Directory.GetCurrentDirectory()).Parent.Parent.Parent;
-  
-                                var folderPath = Path.Combine(rootPath.FullName, "images");
-
-                                if (!Directory.Exists(folderPath))
+                                if(response.StatusCode == HttpStatusCode.OK)
                                 {
-                                    Directory.CreateDirectory(folderPath);
+                                    var bytes = await response.Content.ReadAsByteArrayAsync();                               
+
+                                    var imgName = await _SaveImagesAsync(bytes);
+
+                                    if (!string.IsNullOrWhiteSpace(imgName))
+                                    {
+                                        _Dict.Add(url, imgName);
+                                    }                             
                                 }
-
-                                Console.WriteLine($"folderPath : {folderPath}");
-
-                                var imgName = Guid.NewGuid().ToString() + ".jpg";
-
-                                Console.WriteLine($"image name : {imgName}");
-
-                                await Task.Delay(3000);
-
-                                Console.WriteLine($"image name> : {imgName}");
-
-                                await File.WriteAllBytesAsync($"{folderPath}\\{imgName}", bytes);
                             }
                         }
                         catch (Exception e)
                         {
-                            Console.WriteLine(e.Message);
+                            throw e;
                         }
                         finally
                         {
@@ -75,10 +61,54 @@ namespace ImageDownloder.Infrastructure.Services
                         }
                     }));
                 }
+
                 await Task.WhenAll(tasks);
             }
 
-            return dict;
+            return _Dict;
+        }
+
+        private async Task<string> _SaveImagesAsync(byte[] bytes)
+        {
+            string imgExt;
+
+            using (MemoryStream ms = new MemoryStream(bytes))
+            {
+                using(Image img = Image.FromStream(ms))
+                {
+                    imgExt = img.RawFormat.ToString();
+                    Console.WriteLine($"imgExt : {img.RawFormat}");
+                }
+            }
+
+            var rootPath = new DirectoryInfo(Directory.GetCurrentDirectory()).Parent;
+
+            var folderPath = Path.Combine(rootPath.FullName, "Downloaded_images");
+
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+            }
+
+
+            Console.WriteLine($"folderPath : {folderPath}");
+
+            var imgName = "";
+
+            if (!string.IsNullOrWhiteSpace(imgExt))
+            {
+                imgName = string.Concat(Guid.NewGuid().ToString(),$".{imgExt}");
+
+                Console.WriteLine($"image name : {imgName}");
+
+                await Task.Delay(3000);
+
+                Console.WriteLine($"image name> : {imgName}");
+
+                await File.WriteAllBytesAsync($"{folderPath}\\{imgName}", bytes);
+            }
+         
+            return imgName;
         }
     }
 }

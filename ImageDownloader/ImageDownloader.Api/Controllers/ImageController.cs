@@ -1,8 +1,8 @@
 ﻿using AutoMapper;
+using ImageDownloader.Api.Commons;
 using ImageDownloader.Api.Models;
 using ImageDownloder.Infrastructure.BusinessObjects;
 using ImageDownloder.Infrastructure.Services;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ImageDownloader.Api.Controllers
@@ -32,18 +32,18 @@ namespace ImageDownloader.Api.Controllers
                 {
                     var downloadRequest = _mapper.Map<RequestDownload>(request);
 
-                    await _imageService.DownloadImageAsync(downloadRequest);
+                    var UrlAndNames = await _imageService.DownloadImageAsync(downloadRequest);
 
-                    return Ok();
+                    return Ok(ResponseDownload.SuccessResponse(UrlAndNames,"Images are downloaded successfully !"));
                 }
 
-                return ValidationProblem();
+                return BadRequest(ResponseDownload.FailedResponse("Validation Error Occured"));
             }
             catch(Exception ex)
             {
-                _logger.LogError(ex, "There have a problem occured in download image!");
+                _logger.LogError(ex, "There have a problem occured when download image!");
 
-                return Problem();
+                return BadRequest(ResponseDownload.FailedResponse("There have a problem occured when download image! Internal server Error !"));
             }
         }
     }

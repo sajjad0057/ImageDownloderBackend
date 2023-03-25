@@ -6,18 +6,18 @@
         public string? Message { get; set; }
         public IDictionary<string, string> UrlAndNames { get; set; }
 
-        public static ResponseDownload SuccessResponse(IDictionary<string, string> urlAndNames) => new()
+        public static ResponseDownload SuccessResponse(IDictionary<string, string> urlAndNames,
+            string msg) => new()
         {
             Success = true,
-            Message = "Images are downloaded successfully !",
+            Message = msg,
             UrlAndNames = urlAndNames
         };
 
-
-        public static ResponseDownload FailedResponse(IDictionary<string, string> urlAndNames) => new()
+        public static ResponseDownload FailedResponse(string msg) => new()
         {
             Success = false,
-            Message = "There have a problem in download image",
+            Message = msg,
             UrlAndNames = default,
         };
     }
