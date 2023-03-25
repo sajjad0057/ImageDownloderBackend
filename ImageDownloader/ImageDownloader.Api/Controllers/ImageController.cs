@@ -31,19 +31,19 @@ namespace ImageDownloader.Api.Controllers
                 if(ModelState.IsValid)
                 {
                     var downloadRequest = _mapper.Map<RequestDownload>(request);
-                    _imageService.DownloadImageAsync(downloadRequest);
+
+                    await _imageService.DownloadImageAsync(downloadRequest);
 
                     return Ok();
-
                 }
 
-                return BadRequest();
+                return ValidationProblem();
             }
             catch(Exception ex)
             {
                 _logger.LogError(ex, "There have a problem occured in download image!");
 
-                return BadRequest();
+                return Problem();
             }
         }
     }
