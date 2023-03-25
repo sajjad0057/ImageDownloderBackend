@@ -23,7 +23,9 @@ namespace ImageDownloader.Api.Controllers
             _mapper = mapper;
         }
 
+
         [HttpPost]
+        [Route("Download")]
         public async Task<IActionResult> PostAsync([FromBody] RequestDownloadModel request)
         {
             try
@@ -43,7 +45,7 @@ namespace ImageDownloader.Api.Controllers
             {
                 _logger.LogError(ex, "There have a problem occured when download image!");
 
-                return BadRequest(ResponseDownload.FailedResponse("There have a problem occured when download image! Internal server Error !"));
+                return BadRequest(ResponseDownload.FailedResponse($"Internal server Error ! : ${ex.Message}"));
             }
         }
     }
