@@ -25,7 +25,7 @@ namespace ImageDownloader.Api.Controllers
 
 
         [HttpPost]
-        [Route("Download")]
+        [Route("download")]
         public async Task<IActionResult> PostAsync([FromBody] RequestDownloadModel request)
         {
             try
@@ -36,16 +36,39 @@ namespace ImageDownloader.Api.Controllers
 
                     var UrlAndNames = await _imageService.DownloadImageAsync(downloadRequest);
 
-                    return Ok(ResponseDownload.SuccessResponse(UrlAndNames,"Images are downloaded successfully !"));
+                    return base.Ok(ResponseDownload.SuccessResponse(UrlAndNames, "Images are downloaded successfully !"));
                 }
 
-                return BadRequest(ResponseDownload.FailedResponse("Validation Error Occured"));
+                return base.BadRequest(ResponseDownload.FailedResponse("Validation Error Occured"));
             }
             catch(Exception ex)
             {
                 _logger.LogError(ex, "There have a problem occured when download image!");
 
-                return BadRequest(ResponseDownload.FailedResponse($"Internal server Error ! : ${ex.Message}"));
+                return base.BadRequest(ResponseDownload.FailedResponse($"Internal server Error ! : ${ex.Message}"));
+            }
+        }
+
+        [HttpGet]
+        [Route("get-image-by-name/{image_name}")]
+        public async Task<IActionResult> GetAsync([FromRoute]string image_name)
+        {
+            try
+            {
+                var base64String = await _imageService.GetImageByNameAsync(image_name);
+
+                if (!string.IsNullOrWhiteSpace(base64String))
+                {
+                    return Ok();
+                }
+                else
+                {
+                    return BadRequest();
+                }      
+            }
+            catch (Exception ex)
+            {
+                return BadRequest();
             }
         }
     }

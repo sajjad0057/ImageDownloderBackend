@@ -110,5 +110,28 @@ namespace ImageDownloder.Infrastructure.Services
          
             return imgName;
         }
+
+        public async Task<string> GetImageByNameAsync(string imgName)
+        {
+            var rootPath = new DirectoryInfo(Directory.GetCurrentDirectory()).Parent;
+
+            var imgPath = Path.Combine(rootPath.FullName, $"Downloaded_images\\{imgName}");
+
+            if (File.Exists(imgPath))
+            {
+                return await _ImageToBase64StringAsync(imgPath);
+            }
+            else
+            {
+                return string.Empty;
+            }
+        }
+
+
+        private async Task<string> _ImageToBase64StringAsync(string path)
+        {
+            byte[] imageBytes = await File.ReadAllBytesAsync(path);
+            return Convert.ToBase64String(imageBytes);
+        }
     }
 }
