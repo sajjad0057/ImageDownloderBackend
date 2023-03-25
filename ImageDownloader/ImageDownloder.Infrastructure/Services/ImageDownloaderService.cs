@@ -6,12 +6,17 @@ namespace ImageDownloder.Infrastructure.Services
     public class ImageDownloaderService : IImageDownloaderService
     {
         private readonly HttpClient _httpClient;
+
         public ImageDownloaderService(IHttpClientFactory httpClientFactory)
         {
             _httpClient = httpClientFactory.CreateClient();
         }
+
+
         public async Task<IDictionary<string, string>> DownloadImageAsync(RequestDownload requestDownload)
         {
+            var queue = requestDownload.GetImageQueue();
+
             IDictionary<string, string> dict = new Dictionary<string, string>();
             dict.Add("url", "imageName");
             var tasks = new List<Task>();
