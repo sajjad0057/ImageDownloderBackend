@@ -1,6 +1,6 @@
 ﻿namespace ImageDownloader.Api.Commons
 {
-    public class ResponseGet<T>
+    public sealed class ResponseGet<T>
     {
         public bool Success { get; set; }
         public string? Message { get; set; }

@@ -13,7 +13,6 @@
             UrlAndNames = urlAndNames
         };
 
-
         public static ResponseDownload FailedResponse(string msg) => new()
         {
             Success = false,

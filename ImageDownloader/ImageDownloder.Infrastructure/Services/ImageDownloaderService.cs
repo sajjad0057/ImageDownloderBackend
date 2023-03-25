@@ -1,6 +1,7 @@
 ﻿using ImageDownloder.Infrastructure.BusinessObjects;
 using System.Net;
 using System.Drawing;
+using ImageDownloder.Infrastructure.Exceptions;
 
 
 namespace ImageDownloder.Infrastructure.Services
@@ -15,14 +16,13 @@ namespace ImageDownloder.Infrastructure.Services
             _httpClient = httpClientFactory.CreateClient();
         }
 
-
         public async Task<IDictionary<string, string>> DownloadImageAsync(RequestDownload requestDownload)
         {
             var queue = requestDownload.GetImagesUrlQueue();
-          
+
             using var throttler = new SemaphoreSlim(requestDownload.MaxDownloadAtOnce);
 
-            while(queue.Count > 0)
+            while (queue.Count > 0)
             {
                 var tasks = new List<Task>();
 
@@ -32,33 +32,37 @@ namespace ImageDownloder.Infrastructure.Services
 
                     tasks.Add(Task.Run(async () =>
                     {
-                        try
+                        if (!_Dict.ContainsKey(url))
                         {
-                            if (!_Dict.ContainsKey(url))
+                            var response = await _httpClient.GetAsync(url);
+
+                            if (response.StatusCode == HttpStatusCode.OK)
                             {
-                                var response = await _httpClient.GetAsync(url);
+                                var bytes = await response.Content.ReadAsByteArrayAsync();
 
-                                if(response.StatusCode == HttpStatusCode.OK)
+                                var imgName = await _SaveImagesAsync(bytes);
+
+                                if (!string.IsNullOrWhiteSpace(imgName))
                                 {
-                                    var bytes = await response.Content.ReadAsByteArrayAsync();                               
-
-                                    var imgName = await _SaveImagesAsync(bytes);
-
-                                    if (!string.IsNullOrWhiteSpace(imgName))
+                                    try
                                     {
                                         _Dict.Add(url, imgName);
-                                    }                             
+
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        throw new DuplicateUrlException($"Duplicate download image url not acceptable ! {ex.Message}");
+                                    }
                                 }
                             }
                         }
-                        catch (Exception e)
+                        else
                         {
-                            throw e;
+                            throw new DuplicateUrlException("Duplicate download image url not acceptable !");
                         }
-                        finally
-                        {
-                            throttler.Release();
-                        }
+
+                        throttler.Release();
+
                     }));
                 }
 
@@ -74,10 +78,9 @@ namespace ImageDownloder.Infrastructure.Services
 
             using (MemoryStream ms = new MemoryStream(bytes))
             {
-                using(Image img = Image.FromStream(ms))
+                using (Image img = Image.FromStream(ms))
                 {
                     imgExt = img.RawFormat.ToString();
-                    Console.WriteLine($"imgExt : {img.RawFormat}");
                 }
             }
 
@@ -90,24 +93,15 @@ namespace ImageDownloder.Infrastructure.Services
                 Directory.CreateDirectory(folderPath);
             }
 
-
-            Console.WriteLine($"folderPath : {folderPath}");
-
             var imgName = "";
 
             if (!string.IsNullOrWhiteSpace(imgExt))
             {
-                imgName = string.Concat(Guid.NewGuid().ToString(),$".{imgExt}");
-
-                Console.WriteLine($"image name : {imgName}");
-
-                await Task.Delay(3000);
-
-                Console.WriteLine($"image name> : {imgName}");
+                imgName = string.Concat(Guid.NewGuid().ToString(), $".{imgExt}");
 
                 await File.WriteAllBytesAsync($"{folderPath}\\{imgName}", bytes);
             }
-         
+
             return imgName;
         }
 
@@ -126,7 +120,6 @@ namespace ImageDownloder.Infrastructure.Services
                 return string.Empty;
             }
         }
-
 
         private async Task<string> _ImageToBase64StringAsync(string path)
         {

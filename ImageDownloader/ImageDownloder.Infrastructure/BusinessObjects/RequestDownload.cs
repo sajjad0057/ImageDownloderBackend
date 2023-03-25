@@ -8,7 +8,6 @@
 
         public Queue<List<string>> GetImagesUrlQueue()
         {
-
             if(ImageUrls is not null) 
             {
                 ImageUrls.Select((value, index) => new { Index = index, Value = value })
@@ -16,7 +15,6 @@
                     .Select(x => x.Select(v => v.Value).ToList())
                     .ToList()
                     .ForEach(batch => BatchQueue.Enqueue(batch));
-
             }
 
             return BatchQueue;
