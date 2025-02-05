@@ -22,6 +22,8 @@ namespace ImageDownloder.Infrastructure.Services
 
             using var throttler = new SemaphoreSlim(requestDownload.MaxDownloadAtOnce);
 
+            var startTime = DateTime.Now;
+
             while (queue.Count > 0)
             {
                 var tasks = new List<Task>();
@@ -68,6 +70,10 @@ namespace ImageDownloder.Infrastructure.Services
 
                 await Task.WhenAll(tasks);
             }
+
+            var endTime = DateTime.Now;
+            var timeDiff = endTime - startTime;
+            Console.WriteLine($"Needing Total time (Milliseconds) to download all images : {timeDiff.Milliseconds}");
 
             return _Dict;
         }
