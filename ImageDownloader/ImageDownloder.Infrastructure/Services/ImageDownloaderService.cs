@@ -1,7 +1,6 @@
 ﻿using ImageDownloder.Infrastructure.BusinessObjects;
 using System.Net;
 using System.Drawing;
-using ImageDownloder.Infrastructure.Exceptions;
 
 
 namespace ImageDownloder.Infrastructure.Services
@@ -44,7 +43,7 @@ namespace ImageDownloder.Infrastructure.Services
 
                                     if (!string.IsNullOrWhiteSpace(imgName))
                                     {
-                                        lock (_Dict) // Ensure thread safety
+                                        lock (_Dict) // Ensure thread safety, as if does not access multiple thread at a time
                                         {
                                             _Dict[url] = imgName;
                                         }
