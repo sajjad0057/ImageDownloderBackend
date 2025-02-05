@@ -1,6 +1,7 @@
 ﻿using ImageDownloder.Infrastructure.BusinessObjects;
 using System.Net;
 using System.Drawing;
+using System.Collections.Generic;
 
 
 namespace ImageDownloder.Infrastructure.Services
@@ -20,6 +21,8 @@ namespace ImageDownloder.Infrastructure.Services
             var queue = new Queue<string>(requestDownload.ImageUrls);
             using var throttler = new SemaphoreSlim(requestDownload.MaxDownloadAtOnce);
             var tasks = new List<Task>();
+
+            var startTime = DateTime.Now;
 
             while (queue.Count > 0 || tasks.Count > 0)
             {
@@ -64,11 +67,18 @@ namespace ImageDownloder.Infrastructure.Services
                     tasks.Add(task);
                 }
 
+                //// This means that the code will remove all completed tasks from the tasks list.               
                 tasks.RemoveAll(t => t.IsCompleted);
-                await Task.Delay(100); // Small delay to avoid CPU overuse
+
+                await Task.Delay(100); //// Small delay to avoid CPU overuse
             }
 
             await Task.WhenAll(tasks);
+
+            var endTime = DateTime.Now;
+            var diff = endTime - startTime;
+            Console.WriteLine($"Needing total time(Millisecond) to download imege : {diff.TotalMilliseconds}");
+
             return _Dict;
         }
 
