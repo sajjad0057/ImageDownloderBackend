@@ -18,57 +18,58 @@ namespace ImageDownloder.Infrastructure.Services
 
         public async Task<IDictionary<string, string>> DownloadImageAsync(RequestDownload requestDownload)
         {
-            var queue = requestDownload.GetImagesUrlQueue();
-
+            var queue = new Queue<string>(requestDownload.ImageUrls);
             using var throttler = new SemaphoreSlim(requestDownload.MaxDownloadAtOnce);
+            var tasks = new List<Task>();
 
-            while (queue.Count > 0)
+            while (queue.Count > 0 || tasks.Count > 0)
             {
-                var tasks = new List<Task>();
-
-                foreach (var url in queue.Dequeue())
+                if (queue.Count > 0 && tasks.Count < requestDownload.MaxDownloadAtOnce)
                 {
+                    var url = queue.Dequeue();
                     await throttler.WaitAsync();
 
-                    tasks.Add(Task.Run(async () =>
+                    var task = Task.Run(async () =>
                     {
-                        if (!_Dict.ContainsKey(url))
+                        try
                         {
-                            var response = await _httpClient.GetAsync(url);
-
-                            if (response.StatusCode == HttpStatusCode.OK)
+                            if (!_Dict.ContainsKey(url))
                             {
-                                var bytes = await response.Content.ReadAsByteArrayAsync();
+                                var response = await _httpClient.GetAsync(url);
 
-                                var imgName = await _SaveImagesAsync(bytes);
-
-                                if (!string.IsNullOrWhiteSpace(imgName))
+                                if (response.StatusCode == HttpStatusCode.OK)
                                 {
-                                    try
-                                    {
-                                        _Dict.Add(url, imgName);
+                                    var bytes = await response.Content.ReadAsByteArrayAsync();
+                                    var imgName = await _SaveImagesAsync(bytes);
 
-                                    }
-                                    catch (Exception ex)
+                                    if (!string.IsNullOrWhiteSpace(imgName))
                                     {
-                                        throw new DuplicateUrlException($"Duplicate download image url not acceptable ! {ex.Message}");
+                                        lock (_Dict) // Ensure thread safety
+                                        {
+                                            _Dict[url] = imgName;
+                                        }
                                     }
                                 }
                             }
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            throw new DuplicateUrlException("Duplicate download image url not acceptable !");
+                            Console.WriteLine($"Error downloading {url}: {ex.Message}");
                         }
+                        finally
+                        {
+                            throttler.Release();
+                        }
+                    });
 
-                        throttler.Release();
-
-                    }));
+                    tasks.Add(task);
                 }
 
-                await Task.WhenAll(tasks);
+                tasks.RemoveAll(t => t.IsCompleted);
+                await Task.Delay(100); // Small delay to avoid CPU overuse
             }
 
+            await Task.WhenAll(tasks);
             return _Dict;
         }
 
